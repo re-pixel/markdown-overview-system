@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,10 +10,12 @@ import (
 	"github.com/joho/godotenv"
 
 	db "backend-go/internal/db"
+	sqlc "backend-go/internal/db/sqlc"
+	handle "backend-go/internal/handlers"
 )
 
 func main() {
-	err := godotenv.Load("../../backend-go.env")
+	err := godotenv.Load("backend-go.env")
 	if err != nil {
 		log.Println(".env file not found")
 	}
@@ -24,15 +25,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("database connection error: %v", err)
 	}
-	defer conn.Close(context.Background())
+
+	defer conn.Close()
 	fmt.Println("Connected to NeonDB")
+
+	queries := sqlc.New(conn)
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Server is running!"))
-	}).Methods("GET")
+	r.HandleFunc("/health", handle.HealthHandler).Methods("GET")
+
+	r.HandleFunc("/register", handle.RegisterHandler(queries)).Methods("POST")
 
 	// Port iz .env
 	port := os.Getenv("PORT")
@@ -40,6 +43,6 @@ func main() {
 		port = "8080"
 	}
 
-	fmt.Printf("🚀 Server started on http://localhost:%s\n", port)
+	fmt.Printf("Server started on http://localhost:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }

@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func Connect() (*pgx.Conn, error) {
+func Connect() (*pgxpool.Pool, error) {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		return nil, fmt.Errorf("database_url is not set")
 	}
 
-	conn, err := pgx.Connect(context.Background(), dbURL)
+	conn, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
