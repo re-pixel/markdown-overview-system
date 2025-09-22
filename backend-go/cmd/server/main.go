@@ -11,7 +11,7 @@ import (
 
 	db "backend-go/internal/db"
 	sqlc "backend-go/internal/db/sqlc"
-	handle "backend-go/internal/handlers"
+	handlers "backend-go/internal/handlers"
 )
 
 func main() {
@@ -33,9 +33,11 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/health", handle.HealthHandler).Methods("GET")
+	r.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
 
-	r.HandleFunc("/register", handle.RegisterHandler(queries)).Methods("POST")
+	r.HandleFunc("/register", handlers.RegisterHandler(queries)).Methods("POST")
+
+	r.HandleFunc("/login", handlers.LoginHandler(queries)).Methods("POST")
 
 	// Port iz .env
 	port := os.Getenv("PORT")

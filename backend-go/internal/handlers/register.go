@@ -9,6 +9,7 @@ import (
 )
 
 type RegisterRequest struct {
+	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -28,9 +29,16 @@ func RegisterHandler(queries *sqlc.Queries) http.HandlerFunc {
 		}
 
 		newUser, err := queries.CreateUser(r.Context(), sqlc.CreateUserParams{
-			Email: req.Email,
-			Pass:  string(hashedPassword),
+			Username: req.Username,
+			Email:    req.Email,
+			Pass:     string(hashedPassword),
 		})
+
+		if err != nil {
+			http.Error(w, "could not create user", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(newUser)
 	}

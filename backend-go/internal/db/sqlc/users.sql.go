@@ -7,33 +7,26 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, pass)
-VALUES ($1, $2)
-RETURNING id, email, pass, created_at
+INSERT INTO users (username, email, pass)
+VALUES ($1, $2, $3)
+RETURNING id, username, email, pass, created_at
 `
 
 type CreateUserParams struct {
-	Email string
-	Pass  string
+	Username string
+	Email    string
+	Pass     string
 }
 
-type CreateUserRow struct {
-	ID        int32
-	Email     string
-	Pass      string
-	CreatedAt pgtype.Timestamp
-}
-
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.Pass)
-	var i CreateUserRow
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser, arg.Username, arg.Email, arg.Pass)
+	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Email,
 		&i.Pass,
 		&i.CreatedAt,
@@ -42,23 +35,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, pass, created_at
+SELECT id, username, email, pass, created_at
 FROM users
 WHERE email = $1
 `
 
-type GetUserByEmailRow struct {
-	ID        int32
-	Email     string
-	Pass      string
-	CreatedAt pgtype.Timestamp
-}
-
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
-	var i GetUserByEmailRow
+	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Username,
 		&i.Email,
 		&i.Pass,
 		&i.CreatedAt,
@@ -67,29 +54,23 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, pass, created_at
+SELECT id, username, email, pass, created_at
 FROM users
 ORDER BY created_at DESC
 `
 
-type ListUsersRow struct {
-	ID        int32
-	Email     string
-	Pass      string
-	CreatedAt pgtype.Timestamp
-}
-
-func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListUsersRow
+	var items []User
 	for rows.Next() {
-		var i ListUsersRow
+		var i User
 		if err := rows.Scan(
 			&i.ID,
+			&i.Username,
 			&i.Email,
 			&i.Pass,
 			&i.CreatedAt,
