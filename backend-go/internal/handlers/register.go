@@ -2,9 +2,9 @@ package handlers
 
 import (
 	sqlc "backend-go/internal/db/sqlc"
-	"encoding/json"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -14,32 +14,31 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
-func RegisterHandler(queries *sqlc.Queries) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func RegisterHandler(queries *sqlc.Queries) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		var req RegisterRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 			return
 		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err != nil {
-			http.Error(w, "could not hash password", http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
 			return
 		}
 
-		newUser, err := queries.CreateUser(r.Context(), sqlc.CreateUserParams{
+		newUser, err := queries.CreateUser(c, sqlc.CreateUserParams{
 			Username: req.Username,
 			Email:    req.Email,
 			Pass:     string(hashedPassword),
 		})
 
 		if err != nil {
-			http.Error(w, "could not create user", http.StatusInternalServerError)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create user"})
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(newUser)
+		c.JSON(http.StatusOK, newUser)
 	}
 }

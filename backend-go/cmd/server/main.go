@@ -3,10 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
 	db "backend-go/internal/db"
@@ -31,20 +30,19 @@ func main() {
 
 	queries := sqlc.New(conn)
 
-	r := mux.NewRouter()
+	r := gin.Default()
 
-	r.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
+	r.GET("/health", handlers.HealthHandler)
 
-	r.HandleFunc("/register", handlers.RegisterHandler(queries)).Methods("POST")
+	r.POST("/register", handlers.RegisterHandler(queries))
 
-	r.HandleFunc("/login", handlers.LoginHandler(queries)).Methods("POST")
+	r.POST("/login", handlers.LoginHandler(queries))
 
 	// Port iz .env
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-
+	r.Run(":" + port)
 	fmt.Printf("Server started on http://localhost:%s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
 }

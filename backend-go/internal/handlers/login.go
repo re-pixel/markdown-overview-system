@@ -2,9 +2,9 @@ package handlers
 
 import (
 	sqlc "backend-go/internal/db/sqlc"
-	"encoding/json"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -13,26 +13,25 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func LoginHandler(queries *sqlc.Queries) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func LoginHandler(queries *sqlc.Queries) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		var req LoginRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 			return
 		}
 
-		user, err := queries.GetUserByEmail(r.Context(), req.Email)
+		user, err := queries.GetUserByEmail(c, req.Email)
 		if err != nil {
-			http.Error(w, "User not found", http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 			return
 		}
 
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Pass), []byte(req.Password)); err != nil {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(user)
+		c.JSON(http.StatusOK, user)
 	}
 }
