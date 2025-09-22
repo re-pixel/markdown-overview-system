@@ -1,4 +1,4 @@
-module backend-go
+module github.com/relja-brdar-nimbus-tech/file-overview-system/backend-go
 
 go 1.23.2
 

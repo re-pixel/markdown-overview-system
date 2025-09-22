@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
-	"backend-go/internal/db"
+	db "backend-go/internal/db"
 )
 
 func main() {
