@@ -5,18 +5,25 @@ services:
     container_name: backend-go
     ports:
       - "8080:8080"
-  worker-python:
-    build: ./worker-python
-    container_name: worker-python
-  frontend:
-    build: ./frontend
-    container_name: frontend
-    ports:
-      - "3000:3000"
+    depends_on:
+      - localstack
+    volumes:
+      - ./backend-go/backend-go.env:/app/backend-go.env
+
+  # worker-python:
+  #   build: ./worker-python
+  #   container_name: worker-python
+  # frontend:
+  #   build: ./frontend
+  #   container_name: frontend
+  #   ports:
+  #     - "3000:3000"
   localstack:
     image: localstack/localstack
+    container_name: localstack
     environment:
       - SERVICES=s3,sqs
       - DEBUG=1
+      - AWS_DEFAULT_REGION=eu-central-1
     ports:
       - "4566:4566"
