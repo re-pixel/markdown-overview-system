@@ -2,11 +2,15 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 
+	clients "backend-go/internal/clients"
+
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +24,7 @@ func getUserIdFromContext(c *gin.Context) int32 {
 	return userID
 }
 
-func UploadHandler(s3Client *s3.Client, bucketName string) gin.HandlerFunc {
+func UploadHandler(s3Client *s3.Client, sqsClient *sqs.Client, bucketName string, queueName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID := getUserIdFromContext(c)
 
@@ -49,6 +53,18 @@ func UploadHandler(s3Client *s3.Client, bucketName string) gin.HandlerFunc {
 			log.Printf("upload failed: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": ""})
 			return
+		}
+
+		event := map[string]string{
+			"bucket": bucketName,
+			"key":    key,
+			"userId": string(userID),
+		}
+		body, _ := json.Marshal(event)
+
+		err = clients.SendMessage(sqsClient, queueName, string(body))
+		if err != nil {
+			log.Printf("failed to send SQS message: %v", err)
 		}
 
 		c.JSON(http.StatusOK, gin.H{
