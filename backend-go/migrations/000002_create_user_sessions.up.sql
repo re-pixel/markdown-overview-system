@@ -1,11 +1,3 @@
-create table if not exists users (
-    id serial primary key,
-    username varchar(50) unique not null,
-    email varchar(100) unique not null,
-    pass varchar(255) not null,
-    created_at timestamp default current_timestamp
-);
-
 create table if not exists user_sessions (
     id serial primary key,
     user_id int not null references users(id) on delete cascade,

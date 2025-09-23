@@ -16,6 +16,7 @@ import (
 	db "backend-go/internal/db"
 	sqlc "backend-go/internal/db/sqlc"
 	handlers "backend-go/internal/handlers"
+	middleware "backend-go/internal/middleware"
 )
 
 var s3Client *s3.Client
@@ -80,10 +81,13 @@ func main() {
 
 	r.POST("/login", handlers.LoginHandler(queries))
 
-	r.POST("/upload", handlers.UploadHandler(s3Client, bucketName))
+	auth := r.Group("/")
+	auth.Use(middleware.SessionMiddleware(queries))
+	{
+		auth.POST("/upload", handlers.UploadHandler(s3Client, bucketName))
 
-	r.POST("/files", handlers.ListFilesHandler(s3Client, bucketName))
-
+		auth.POST("/files", handlers.ListFilesHandler(s3Client, bucketName))
+	}
 	// Port iz .env
 	port := os.Getenv("PORT")
 	if port == "" {

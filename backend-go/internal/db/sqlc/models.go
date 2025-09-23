@@ -15,3 +15,11 @@ type User struct {
 	Pass      string
 	CreatedAt pgtype.Timestamp
 }
+
+type UserSession struct {
+	ID           int32
+	UserID       int32
+	SessionToken string
+	CreatedAt    pgtype.Timestamp
+	ExpiresAt    pgtype.Timestamp
+}
