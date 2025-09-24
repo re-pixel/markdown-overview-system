@@ -1,13 +1,15 @@
-// internal/worker/response_worker.go
 package worker
 
 import (
+	"backend-go/internal/events"
 	"context"
 	"encoding/json"
-	"fmt"
+	"io"
 	"log"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
@@ -18,15 +20,22 @@ type ResponseMessage struct {
 	UserID string `json:"userId"`
 }
 
-func StartResponseWorker(client *sqs.Client, queueName string) {
+type SSEMessage struct {
+	UserID  string `json:"userId"`
+	Content string `json:"content"`
+}
+
+func StartResponseWorker(sqsClient *sqs.Client, s3Client *s3.Client, queueName string, bucketName string, broadcaster *events.Broadcaster) {
 	go func() {
-		getOut, _ := client.GetQueueUrl(context.TODO(), &sqs.GetQueueUrlInput{
+		getOut, _ := sqsClient.GetQueueUrl(context.TODO(), &sqs.GetQueueUrlInput{
 			QueueName: &queueName,
 		})
 
+		queueUrl := getOut.QueueUrl
+
 		for {
-			resp, err := client.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
-				QueueUrl:            getOut.QueueUrl,
+			resp, err := sqsClient.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
+				QueueUrl:            queueUrl,
 				MaxNumberOfMessages: 5,
 				WaitTimeSeconds:     10,
 			})
@@ -47,11 +56,29 @@ func StartResponseWorker(client *sqs.Client, queueName string) {
 					continue
 				}
 
-				fmt.Printf("Summary ready for user %s at s3://%s/%s (status: %s)\n",
-					msg.UserID, msg.Bucket, msg.Key, msg.Status)
+				s3Resp, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
+					Bucket: aws.String(msg.Bucket),
+					Key:    aws.String(msg.Key),
+				})
+				if err != nil {
+					log.Printf("failed to fetch from s3: %v", err)
+					continue
+				}
 
-				_, err := client.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
-					QueueUrl:      getOut.QueueUrl,
+				bodyBytes, _ := io.ReadAll(s3Resp.Body)
+				content := string(bodyBytes)
+
+				sseMsg := SSEMessage{
+					UserID:  msg.UserID,
+					Content: content,
+				}
+
+				jsonData, _ := json.Marshal(sseMsg)
+
+				broadcaster.Publish(string(jsonData))
+
+				_, err = sqsClient.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+					QueueUrl:      queueUrl,
 					ReceiptHandle: m.ReceiptHandle,
 				})
 				if err != nil {

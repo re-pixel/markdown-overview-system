@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
@@ -38,12 +39,11 @@ export default function DashboardPage() {
         credentials: "include",
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setOverview(data.overview || "No overview received.");
-        fetchFiles(); // refresh history after upload
+      if (!res.ok) {
+        setOverview("Error: Failed to upload or generate overview.");
       } else {
-        setOverview("Error: Failed to generate overview.");
+        // Optional: you could parse immediate response here if needed
+        fetchFiles(); // refresh history after upload
       }
     } catch (err) {
       console.error(err);
@@ -73,6 +73,26 @@ export default function DashboardPage() {
       setHistoryLoading(false);
     }
   }
+
+  useEffect(() => {
+    const evtSource = new EventSource("http://localhost:8080/events");
+
+    evtSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+          setOverview(data.content);
+      } catch (err) {
+        console.error("Failed to parse SSE message:", err);
+      }
+    };
+
+    evtSource.onerror = (err) => {
+      console.error("SSE connection error:", err);
+      evtSource.close();
+    };
+
+    return () => evtSource.close();
+  }, []);
 
   useEffect(() => {
     fetchFiles();
@@ -159,7 +179,9 @@ export default function DashboardPage() {
                 <li
                   key={i}
                   className="cursor-pointer rounded-lg border border-gray-200 bg-white/80 p-3 text-gray-800 shadow-sm transition hover:bg-teal-50"
-                  onClick={() => setOverview(`Overview for: ${f.name}\n\n(Click would fetch from backend)`)}
+                  onClick={() =>
+                    setOverview(`Overview for: ${f.name}\n\n(Click would fetch from backend)`)
+                  }
                 >
                   <p className="font-medium">{f.name}</p>
                   <p className="text-xs text-gray-500">

@@ -10,6 +10,7 @@ import (
 	clients "backend-go/internal/clients"
 	db "backend-go/internal/db"
 	sqlc "backend-go/internal/db/sqlc"
+	"backend-go/internal/events"
 	router "backend-go/internal/router"
 	worker "backend-go/internal/worker"
 )
@@ -46,9 +47,11 @@ func main() {
 		log.Fatalf("failed to create SQS queue: %v", err)
 	}
 
-	worker.StartResponseWorker(sqsClient, responseQueueName)
+	broadcaster := events.NewBroadcaster()
 
-	r := router.SetupRouter(queries, s3Client, sqsClient, bucketName, taskQueueName)
+	worker.StartResponseWorker(sqsClient, s3Client, responseQueueName, bucketName, broadcaster)
+
+	r := router.SetupRouter(queries, s3Client, sqsClient, bucketName, taskQueueName, broadcaster)
 
 	// Port iz .env
 	port := os.Getenv("PORT")

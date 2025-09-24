@@ -8,13 +8,14 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"backend-go/internal/events"
 	handlers "backend-go/internal/handlers"
 	middleware "backend-go/internal/middleware"
 
 	sqlc "backend-go/internal/db/sqlc"
 )
 
-func SetupRouter(queries *sqlc.Queries, s3Client *s3.Client, sqsClient *sqs.Client, bucketName string, queueName string) *gin.Engine {
+func SetupRouter(queries *sqlc.Queries, s3Client *s3.Client, sqsClient *sqs.Client, bucketName string, queueName string, broadcaster *events.Broadcaster) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -31,6 +32,8 @@ func SetupRouter(queries *sqlc.Queries, s3Client *s3.Client, sqsClient *sqs.Clie
 	r.POST("/register", handlers.RegisterHandler(queries))
 
 	r.POST("/login", handlers.LoginHandler(queries))
+
+	r.GET("/events", handlers.EventHandler(broadcaster))
 
 	auth := r.Group("/")
 	auth.Use(middleware.SessionMiddleware(queries))
