@@ -6,7 +6,8 @@ import time
 sqs = boto3.client("sqs", endpoint_url="http://localhost:4566", region_name="eu-central-1")
 s3 = boto3.client("s3", endpoint_url="http://localhost:4566", region_name="eu-central-1")
 
-QUEUE_URL ="http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/file-events-queue"
+TASK_QUEUE_URL ="http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/task-queue"
+RESPONSE_QUEUE_URL = "http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/response-queue"
 OPENROUTER_API_KEY = "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"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -42,13 +43,13 @@ def process_file(bucket, key):
         Body=overview.encode("utf-8")  
     )
     print(f"Summary uploaded to s3://{bucket}/{overview_key}")
-    return resp_json
+    return overview_key
 
 
 def worker_loop():
     while True:
         resp = sqs.receive_message(
-            QueueUrl=QUEUE_URL,
+            QueueUrl=TASK_QUEUE_URL,
             MaxNumberOfMessages=5,
             WaitTimeSeconds=10
         )
@@ -66,10 +67,23 @@ def worker_loop():
             userId = body["userId"]
 
             print(f"Processing file {key} from {bucket} for user {userId}")
-            process_file(bucket, key)
+            overview_key = process_file(bucket, key)
+            response_msg = {
+                "bucket": bucket,
+                "key": overview_key,
+                "status": "completed",
+                "userId": userId,
+            }
+
+            sqs.send_message(
+                QueueUrl=RESPONSE_QUEUE_URL,
+                MessageBody=json.dumps(response_msg),
+            )
+            print(f"Sent response message for {overview_key}")
+
 
             sqs.delete_message(
-                QueueUrl=QUEUE_URL,
+                QueueUrl=TASK_QUEUE_URL,
                 ReceiptHandle=msg["ReceiptHandle"]
             )
             print(f"Deleted message {msg['MessageId']}")

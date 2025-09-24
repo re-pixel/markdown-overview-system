@@ -11,10 +11,12 @@ import (
 	db "backend-go/internal/db"
 	sqlc "backend-go/internal/db/sqlc"
 	router "backend-go/internal/router"
+	worker "backend-go/internal/worker"
 )
 
 var bucketName string = "file-overview-system-bucket"
-var queueName string = "file-events-queue"
+var taskQueueName string = "task-queue"
+var responseQueueName string = "response-queue"
 
 func main() {
 	err := godotenv.Load("backend-go.env")
@@ -37,13 +39,16 @@ func main() {
 	clients.CreateBucket(s3Client, bucketName)
 
 	sqsClient := clients.InitSQSClient()
-	clients.CreateQueue(sqsClient, queueName)
+	clients.CreateQueue(sqsClient, taskQueueName)
+	clients.CreateQueue(sqsClient, responseQueueName)
 
 	if err != nil {
 		log.Fatalf("failed to create SQS queue: %v", err)
 	}
 
-	r := router.SetupRouter(queries, s3Client, sqsClient, bucketName, queueName)
+	worker.StartResponseWorker(sqsClient, responseQueueName)
+
+	r := router.SetupRouter(queries, s3Client, sqsClient, bucketName, taskQueueName)
 
 	// Port iz .env
 	port := os.Getenv("PORT")

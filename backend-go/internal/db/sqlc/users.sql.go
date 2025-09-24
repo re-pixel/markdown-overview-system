@@ -7,34 +7,7 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
-
-const createSession = `-- name: CreateSession :one
-INSERT INTO user_sessions (user_id, session_token, expires_at)
-VALUES ($1, $2, $3)
-RETURNING id, user_id, session_token, created_at, expires_at
-`
-
-type CreateSessionParams struct {
-	UserID       int32
-	SessionToken string
-	ExpiresAt    pgtype.Timestamp
-}
-
-func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (UserSession, error) {
-	row := q.db.QueryRow(ctx, createSession, arg.UserID, arg.SessionToken, arg.ExpiresAt)
-	var i UserSession
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.SessionToken,
-		&i.CreatedAt,
-		&i.ExpiresAt,
-	)
-	return i, err
-}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, email, pass)
@@ -61,36 +34,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const deleteSession = `-- name: DeleteSession :exec
-DELETE
-FROM user_sessions
-WHERE session_token = $1
-`
-
-func (q *Queries) DeleteSession(ctx context.Context, sessionToken string) error {
-	_, err := q.db.Exec(ctx, deleteSession, sessionToken)
-	return err
-}
-
-const getSession = `-- name: GetSession :one
-SELECT id, user_id, session_token, created_at, expires_at
-FROM user_sessions
-WHERE session_token = $1
-`
-
-func (q *Queries) GetSession(ctx context.Context, sessionToken string) (UserSession, error) {
-	row := q.db.QueryRow(ctx, getSession, sessionToken)
-	var i UserSession
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.SessionToken,
-		&i.CreatedAt,
-		&i.ExpiresAt,
-	)
-	return i, err
-}
-
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, username, email, pass, created_at
 FROM users
@@ -108,6 +51,19 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getUserIdByUsername = `-- name: GetUserIdByUsername :one
+SELECT id
+FROM users
+WHERE username = $1
+`
+
+func (q *Queries) GetUserIdByUsername(ctx context.Context, username string) (int32, error) {
+	row := q.db.QueryRow(ctx, getUserIdByUsername, username)
+	var id int32
+	err := row.Scan(&id)
+	return id, err
 }
 
 const listUsers = `-- name: ListUsers :many

@@ -51,5 +51,3 @@ func SendMessage(client *sqs.Client, queueName string, messageBody string) error
 
 	return err
 }
-
-//func RecieveMessages(client *sqs.Client, queueUrl)
