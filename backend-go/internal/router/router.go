@@ -1,10 +1,12 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 
 	handlers "backend-go/internal/handlers"
 	middleware "backend-go/internal/middleware"
@@ -14,6 +16,15 @@ import (
 
 func SetupRouter(queries *sqlc.Queries, s3Client *s3.Client, sqsClient *sqs.Client, bucketName string, queueName string) *gin.Engine {
 	r := gin.Default()
+
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // frontend URL
+		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	r.GET("/health", handlers.HealthHandler)
 
