@@ -28,9 +28,9 @@ The system follows an event-driven architecture with the following flow:
        │                                │                                 ↓
        │                          ┌──────────────┐                ┌──────────────┐
        └────────────────────────  │  Backend-Go  │ <────────────  │  Response    │
-              display summary      │ (SSE Worker) │                │    Queue     │
-                                   └──────────────┘                │    (SQS)     │
-                                                                   └──────────────┘
+              display summary     │ (SSE Worker) │                │    Queue     │
+                                  └──────────────┘                │    (SQS)     │
+                                                                  └──────────────┘
 ```
 
 ## Technology Stack
@@ -343,15 +343,3 @@ Migrations should be run before starting the backend. The system uses `sqlc` for
 | GET | `/events` | SSE event stream | No |
 | POST | `/upload` | Upload file | Yes |
 | POST | `/files` | List user files | Yes |
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly with all services running
-5. Submit a pull request
-
-## License
-
-This project is provided as-is for educational and development purposes.
