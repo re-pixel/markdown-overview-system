@@ -2,14 +2,18 @@ import boto3
 import requests
 import json
 import time
+import os
 
-sqs = boto3.client("sqs", endpoint_url="http://localhost:4566", region_name="eu-central-1")
-s3 = boto3.client("s3", endpoint_url="http://localhost:4566", region_name="eu-central-1")
+LOCALSTACK_ENDPOINT = os.getenv("LOCALSTACK_ENDPOINT", "http://localhost:4566")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "eu-central-1")
 
-TASK_QUEUE_URL ="http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/task-queue"
-RESPONSE_QUEUE_URL = "http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/response-queue"
-OPENROUTER_API_KEY = "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"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+sqs = boto3.client("sqs", endpoint_url=LOCALSTACK_ENDPOINT, region_name=AWS_DEFAULT_REGION)
+s3 = boto3.client("s3", endpoint_url=LOCALSTACK_ENDPOINT, region_name=AWS_DEFAULT_REGION)
+
+TASK_QUEUE_URL = os.getenv("TASK_QUEUE_URL", "http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/task-queue")
+RESPONSE_QUEUE_URL = os.getenv("RESPONSE_QUEUE_URL", "http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/response-queue")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")  # Intentionally blank fallback
+OPENROUTER_URL = os.getenv("OPENROUTER_URL", "https://openrouter.ai/api/v1/chat/completions")
 
 def process_file(bucket, key):
 

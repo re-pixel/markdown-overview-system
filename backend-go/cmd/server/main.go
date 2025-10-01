@@ -15,15 +15,17 @@ import (
 	worker "backend-go/internal/worker"
 )
 
-var bucketName string = "file-overview-system-bucket"
-var taskQueueName string = "task-queue"
-var responseQueueName string = "response-queue"
+var bucketName string
+var taskQueueName string
+var responseQueueName string
 
 func main() {
-	err := godotenv.Load("backend-go.env")
-	if err != nil {
-		log.Println(".env file not found")
-	}
+	_ = godotenv.Load(".env")           // attempt root .env first
+	_ = godotenv.Load("backend-go.env") // fallback / legacy
+
+	bucketName = getenvDefault("S3_BUCKET_NAME", "file-overview-system-bucket")
+	taskQueueName = getenvDefault("TASK_QUEUE_NAME", "task-queue")
+	responseQueueName = getenvDefault("RESPONSE_QUEUE_NAME", "response-queue")
 
 	conn, err := db.Connect()
 
@@ -53,11 +55,15 @@ func main() {
 
 	r := router.SetupRouter(queries, s3Client, sqsClient, bucketName, taskQueueName, broadcaster)
 
-	// Port iz .env
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	port := getenvDefault("PORT", "8080")
 	r.Run(":" + port)
 	fmt.Printf("Server started on http://localhost:%s\n", port)
+}
+
+func getenvDefault(key, def string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	return v
 }

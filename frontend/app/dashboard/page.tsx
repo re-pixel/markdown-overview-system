@@ -33,7 +33,8 @@ export default function DashboardPage() {
       formData.append("file", file);
       formData.append("model", model);
 
-      const res = await fetch("http://localhost:8080/upload", {
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+  const res = await fetch(`${apiBase}/upload`, {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -56,7 +57,8 @@ export default function DashboardPage() {
   async function fetchFiles() {
     setHistoryLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/files", {
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+  const res = await fetch(`${apiBase}/files`, {
         method: "POST",
         credentials: "include",
       });
@@ -75,7 +77,8 @@ export default function DashboardPage() {
   }
 
   useEffect(() => {
-    const evtSource = new EventSource("http://localhost:8080/events");
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+  const evtSource = new EventSource(`${apiBase}/events`);
 
     evtSource.onmessage = (event) => {
       try {

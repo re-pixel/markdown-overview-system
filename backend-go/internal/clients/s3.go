@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -11,17 +12,29 @@ import (
 )
 
 func InitS3Client() *s3.Client {
+	region := os.Getenv("AWS_DEFAULT_REGION")
+	if region == "" {
+		region = "eu-central-1"
+	}
+	endpoint := os.Getenv("S3_ENDPOINT")
+	if endpoint == "" {
+		endpoint = os.Getenv("LOCALSTACK_ENDPOINT")
+	}
+	if endpoint == "" {
+		endpoint = "http://localhost:4566"
+	}
+
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
-		config.WithRegion("eu-central-1"), // required by AWS SDK
+		config.WithRegion(region),
 	)
 	if err != nil {
 		log.Printf("failed to load AWS config: %v", err)
 	}
 
 	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true // Use path-style addressing
-		o.BaseEndpoint = aws.String("http://localhost:4566")
+		o.UsePathStyle = true
+		o.BaseEndpoint = aws.String(endpoint)
 	})
 	return s3Client
 }

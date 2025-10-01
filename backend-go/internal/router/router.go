@@ -1,6 +1,7 @@
 package router
 
 import (
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -18,8 +19,12 @@ import (
 func SetupRouter(queries *sqlc.Queries, s3Client *s3.Client, sqsClient *sqs.Client, bucketName string, queueName string, broadcaster *events.Broadcaster) *gin.Engine {
 	r := gin.Default()
 
+	allowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if allowedOrigins == "" {
+		allowedOrigins = "http://localhost:3000"
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // frontend URL
+		AllowOrigins:     []string{allowedOrigins},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},

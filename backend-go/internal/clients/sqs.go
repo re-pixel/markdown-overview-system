@@ -3,6 +3,7 @@ package clients
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -10,16 +11,28 @@ import (
 )
 
 func InitSQSClient() *sqs.Client {
+	region := os.Getenv("AWS_DEFAULT_REGION")
+	if region == "" {
+		region = "eu-central-1"
+	}
+	endpoint := os.Getenv("SQS_ENDPOINT")
+	if endpoint == "" {
+		endpoint = os.Getenv("LOCALSTACK_ENDPOINT")
+	}
+	if endpoint == "" {
+		endpoint = "http://localhost:4566"
+	}
+
 	cfg, err := config.LoadDefaultConfig(
 		context.TODO(),
-		config.WithRegion("eu-central-1"),
+		config.WithRegion(region),
 	)
 	if err != nil {
 		log.Fatalf("failed to load AWS config: %v", err)
 	}
 
 	client := sqs.NewFromConfig(cfg, func(o *sqs.Options) {
-		o.BaseEndpoint = aws.String("http://localhost:4566")
+		o.BaseEndpoint = aws.String(endpoint)
 	})
 
 	return client
