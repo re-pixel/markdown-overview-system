@@ -2,6 +2,10 @@
 
 A distributed file processing system that generates AI-powered summaries of uploaded markdown files. The system uses a microservices architecture with Go backend, Python worker, Next.js frontend, and AWS services (S3, SQS) via LocalStack.
 
+## Demo Video
+
+Watch the system in action: [YouTube Demo](https://youtu.be/wt2Bm6EyODs)
+
 ## Architecture Overview
 
 The system follows an event-driven architecture with the following flow:
